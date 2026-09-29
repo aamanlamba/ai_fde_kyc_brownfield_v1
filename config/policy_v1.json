@@ -1,0 +1,22 @@
+{
+  "policy_version": "1.0.0",
+  "approved_by": "Compliance KYC policy lead",
+  "approved_on": "2026-09-28",
+  "completeness_threshold": 0.75,
+  "supported_types": [
+    "passport",
+    "national_id",
+    "driving_licence"
+  ],
+  "number_patterns": {
+    "passport": "^PXT\\d{6}$",
+    "national_id": "^MID-\\d{4}-\\d{4}$",
+    "driving_licence": "^MDL-\\d{6}$"
+  },
+  "mandatory_fields": [
+    "full_name",
+    "date_of_birth",
+    "document_number",
+    "expiry_date"
+  ]
+}
