@@ -8,7 +8,7 @@ One command runs everything:
 
 Pytest summary line:
 
-- `42 passed, 1 xfailed, 1 warning in 0.21s`
+- `50 passed, 1 xfailed, 1 warning in 0.82s`
 
 ## BS-14-02
 
@@ -26,6 +26,19 @@ SIMULATED items: none.
 
 Pytest summary line: `42 passed, 1 xfailed, 1 warning in 0.21s`.
 
+## BS-14-03
+
+| SPEC / carry-over | Files | Tests |
+| --- | --- | --- |
+| SPEC-12-005 pure mandatory-field, number-format, expiry, and outcome rules | `src/validation/rules.py`, `src/rules.py`, `src/service.py` | `test_TST_13_013_expired_with_fixed_clock`, `test_TST_13_014_expiry_boundary`, `test_TST_13_015_decision_date_from_clock`, `test_TST_13_016_invalid_expiry_reviews`, `test_TST_13_017_missing_name_reviews`, `test_TST_13_018_malformed_number_reviews` |
+| Tamper signal port and adapter | `src/ports.py`, `src/adapters/tamper_marker.py`, `src/orchestrator/wiring.py`, `src/service.py` | `test_bs03_tamper_via_provider` |
+| Validation purity and clock injection | `src/validation/rules.py`, `src/orchestrator/wiring.py`, `src/rules.py` | `test_bs03_validation_layer_is_pure`, `test_TST_13_015_decision_date_from_clock` |
+| CF-5/CF-6/CF-7 | Root `conftest.py`, `src/obs/import_graph.py`, `tests/intended/test_TST_13_002_import_graph_detects_violation.py`, `tests/intended/test_bs01_policy_values_drive_rules.py` | `test_bs03_registry_matches_from_parent_dir`, `test_TST_13_002_import_graph_detects_violation` |
+
+SIMULATED: `MarkerSignal` inspects the synthetic `ALTERED_TEXT_REGION_DETECTED` sidecar marker; it does not perform image forensics.
+
+Pytest summary line: `50 passed, 1 xfailed, 1 warning in 0.82s`.
+
 ## SPEC coverage
 
 | SPEC ID | Files / functions | Test names |
@@ -34,7 +47,7 @@ Pytest summary line: `42 passed, 1 xfailed, 1 warning in 0.21s`.
 | SPEC-12-008 | `src/adapters/file_policy_source.py`, `src/rules.py`, `config/policy_v1.json` | `test_TST_13_033_invalid_policy_rejected`, `test_bs01_policy_values_drive_rules` |
 | SPEC-12-018 | `OWNERS.md`, `src/adapters/file_policy_source.py` | `test_TST_13_064_unlisted_approver_rejected` |
 | SPEC-12-017 | `tests/intended/`, `tests/legacy_known_defects/README.md` | `test_TST_13_062_test_tree_hygiene` |
-| Clock port | `src/adapters/clocks.py`, `src/rules.py` | `test_bs01_fixed_clock_expiry_boundary` |
+| Clock port | `src/adapters/clocks.py`, `src/rules.py` | `test_TST_13_014_expiry_boundary` |
 
 ## SIMULATED items
 
@@ -42,6 +55,7 @@ Expected: none.
 
 ## Known limitations
 
-- `MANIFEST.sha256` is now stale for the modified files in this slice.
-- `SystemClock` makes expiry outcomes date-dependent; sample outcomes remain unchanged until 2030-07-04, the earliest non-expired expiry in the sample dataset.
-- The repository intentionally keeps the baseline API contracts and output snapshots unchanged while adding the module skeleton and policy loader.
+- `MarkerSignal` is SIMULATED and only recognizes the synthetic sidecar marker; image forensics is not implemented.
+- OCR remains deterministic and sidecar-backed; this slice does not add an OCR provider or network dependency.
+- Runtime expiry decisions use the injected system clock; tests use `FixedClock` for deterministic boundaries.
+- `MANIFEST.sha256` remains unchanged and may not reflect files added by these development slices.

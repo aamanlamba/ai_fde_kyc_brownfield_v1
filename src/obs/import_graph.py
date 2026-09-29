@@ -77,6 +77,11 @@ def check_import_boundaries(src_root: str | Path) -> list[str]:
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'open':
                 if not (relative.parts and relative.parts[0] == 'adapters'):
                     violations.append(f'{rel_string}: bare open() call outside adapters')
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == 'open':
+                owner = node.func.value
+                if isinstance(owner, ast.Name) and owner.id in {'builtins', 'io'}:
+                    if not (relative.parts and relative.parts[0] == 'adapters'):
+                        violations.append(f'{rel_string}: {owner.id}.open() call outside adapters')
             if isinstance(node, ast.Call):
                 func = node.func
                 if isinstance(func, ast.Attribute):

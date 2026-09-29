@@ -4,7 +4,7 @@ from src.adapters.clocks import FixedClock
 from src.rules import evaluate
 
 
-def test_bs01_fixed_clock_expiry_boundary():
+def test_TST_13_014_expiry_boundary():
     fields = {
         'document_type': 'passport',
         'full_name': 'A',

@@ -6,11 +6,13 @@ from src.adapters.clocks import SystemClock
 from src.adapters.file_policy_source import FilePolicySource
 from src.adapters import sample_repository as _sample_repository
 from src.adapters.sidecar_text import SidecarAdapter
-from src.ports import Clock, ExtractionProvider, PolicySource
+from src.adapters.tamper_marker import MarkerSignal
+from src.ports import Clock, ExtractionProvider, PolicySource, TamperSignalProvider
 
 _default_policy_source: PolicySource = FilePolicySource()
 _default_provider: ExtractionProvider = SidecarAdapter(_default_policy_source)
 _default_clock: Clock = SystemClock()
+_default_tamper_provider: TamperSignalProvider = MarkerSignal()
 
 
 def get_extraction_provider() -> ExtractionProvider:
@@ -49,6 +51,15 @@ def get_clock() -> Clock:
 def set_clock(clock: Clock) -> None:
     global _default_clock
     _default_clock = clock
+
+
+def get_tamper_provider() -> TamperSignalProvider:
+    return _default_tamper_provider
+
+
+def set_tamper_provider(provider: TamperSignalProvider) -> None:
+    global _default_tamper_provider
+    _default_tamper_provider = provider
 
 
 def load_application(case_id: str) -> dict[str, Any]:

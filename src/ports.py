@@ -65,5 +65,5 @@ class ReviewQueue(Protocol):
 
 @runtime_checkable
 class TamperSignalProvider(Protocol):
-    def signal(self, document_id: str) -> bool:
+    def signals(self, extraction: ExtractionResult) -> list[str]:
         ...

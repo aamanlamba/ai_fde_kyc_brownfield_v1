@@ -1,11 +1,19 @@
 from __future__ import annotations
 
-from datetime import date
 import re
+from datetime import date
 from typing import Any
 
-from src.ports import Clock
-from src.orchestrator.wiring import get_clock, get_policy, get_policy_source as _get_policy_source, set_policy_source as _set_policy_source
+from src.orchestrator.wiring import (
+    get_clock,
+    get_policy,
+    get_policy_source as _get_policy_source,
+    get_tamper_provider,
+    set_policy_source as _set_policy_source,
+)
+from src.ports import Clock, ExtractionResult, FieldValue
+from src.validation.rules import completeness as _completeness
+from src.validation.rules import validate
 
 MANDATORY: tuple[str, ...] = tuple()
 PATTERNS: dict[str, re.Pattern[str] | str] = {}
@@ -40,45 +48,19 @@ def set_policy_source(source):
 
 
 def completeness(fields: dict) -> float:
-    required = tuple(_current_policy().get('mandatory_fields', MANDATORY) or MANDATORY)
-    if not required:
-        return 0.0
-    return round(sum(bool(fields.get(k)) for k in required) / len(required), 3)
+    return _completeness(fields, _current_policy())
 
 
 def evaluate(fields: dict, raw_text: str, clock: Clock | None = None) -> tuple[str, list[str], list[str]]:
-    reasons: list[str] = []
-    warnings: list[str] = []
     policy = _current_policy()
-    dtype = (fields.get('document_type') or '').lower()
-    c = completeness(fields)
-    threshold = float(policy.get('completeness_threshold', COMPLETENESS_THRESHOLD))
-    supported = {str(item).lower() for item in policy.get('supported_types', [])}
-    if dtype and dtype not in supported:
-        reasons.append('UNSUPPORTED_DOCUMENT_TYPE')
-    if c < threshold:
-        reasons.append('INSUFFICIENT_MANDATORY_FIELDS')
-    num = fields.get('document_number', '')
-    pat = policy.get('number_patterns', PATTERNS).get(dtype) or PATTERNS.get(dtype)
-    if pat and num and not re.fullmatch(pat, num):
-        reasons.append('INVALID_DOCUMENT_NUMBER_FORMAT')
-    expiry = fields.get('expiry_date')
-    if expiry:
-        try:
-            decision_date = (clock or get_clock()).today()
-            if date.fromisoformat(expiry) < decision_date:
-                reasons.append('DOCUMENT_EXPIRED')
-        except ValueError:
-            reasons.append('INVALID_EXPIRY_DATE')
-    if 'ALTERED_TEXT_REGION_DETECTED' in raw_text:
-        reasons.append('SUSPECTED_TAMPERING')
-    if 'DEGRADED' in raw_text:
-        warnings.append('OCR_QUALITY_DEGRADED')
-    if '90_DEGREES' in raw_text:
-        warnings.append('ROTATED_DOCUMENT')
-    if any(r in reasons for r in ('SUSPECTED_TAMPERING', 'DOCUMENT_EXPIRED')):
-        return 'REJECT', reasons, warnings
-    if reasons or warnings:
-        return 'REVIEW', reasons or ['MANUAL_REVIEW_REQUIRED'], warnings
-    return 'APPROVE', ['BASELINE_RULES_PASSED'], warnings
+    extraction = ExtractionResult(
+        document_id='rules-shim',
+        fields={
+            name: value if isinstance(value, FieldValue) else FieldValue(raw=value, value=value)
+            for name, value in fields.items()
+        },
+        raw_text=raw_text,
+    )
+    signals = get_tamper_provider().signals(extraction)
+    return validate(fields, policy, (clock or get_clock()).today(), signals, raw_text)
 

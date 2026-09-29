@@ -1,10 +1,7 @@
-import json
-from pathlib import Path
-
 from src import rules
 
 
-def test_bs01_policy_values_drive_rules(tmp_path):
+def test_bs01_policy_values_drive_rules():
     policy = {
         'policy_version': '1.0.0',
         'approved_by': 'Compliance KYC policy lead',
@@ -18,9 +15,6 @@ def test_bs01_policy_values_drive_rules(tmp_path):
         },
         'mandatory_fields': ['full_name', 'date_of_birth', 'document_number', 'expiry_date'],
     }
-    policy_path = tmp_path / 'policy_v1.json'
-    policy_path.write_text(json.dumps(policy), encoding='utf-8')
-
     original = rules.get_policy_source()
     rules.set_policy_source(lambda: policy)
     try:

@@ -14,9 +14,17 @@ def test_TST_13_002_import_graph_detects_violation(tmp_path):
         textwrap.dedent(
             '''
             from src.adapters.sample_repository import load_sidecar
+            import builtins
+            import io
             
             def done():
                 return load_sidecar('CASE-001-PASSPORT')
+
+            def read_with_builtins(path):
+                return builtins.open(path).read()
+
+            def read_with_io(path):
+                return io.open(path).read()
             '''
         ),
         encoding='utf-8',
@@ -28,4 +36,6 @@ def test_TST_13_002_import_graph_detects_violation(tmp_path):
 
     violations = check_import_boundaries(root)
     assert any('bad_module.py' in violation for violation in violations)
+    assert any('builtins.open()' in violation for violation in violations)
+    assert any('io.open()' in violation for violation in violations)
     assert any('bare_open.py' in violation and 'open()' in violation for violation in violations)

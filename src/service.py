@@ -1,7 +1,7 @@
 from src.models import DocumentResult, CaseResult
-from src.orchestrator.wiring import get_extraction_provider, get_policy
+from src.orchestrator.wiring import get_clock, get_extraction_provider, get_policy, get_tamper_provider
 from src.repository import load_application
-from src.rules import evaluate, completeness
+from src.validation.rules import completeness, validate
 from src.validation.doctype import normalise
 from src.ports import ExtractionUnavailable
 
@@ -32,19 +32,25 @@ def verify_document(document_id: str) -> DocumentResult:
     policy = get_policy()
     supported = set(policy.get('supported_types', []))
     normalised = normalise(document_type)
-    decision, reasons, rule_warnings = evaluate(parsed_fields, text)
-    warnings = extraction.warnings + rule_warnings
+    signals = get_tamper_provider().signals(extraction)
+    decision, reasons, rule_warnings = validate(
+        parsed_fields,
+        policy,
+        get_clock().today(),
+        signals,
+        text,
+    )
     unsupported = normalised is None or normalised not in supported
     if unsupported and 'UNSUPPORTED_DOCUMENT_TYPE' not in reasons:
         reasons.append('UNSUPPORTED_DOCUMENT_TYPE')
+    if unsupported and decision == 'REVIEW' and 'MANUAL_REVIEW_REQUIRED' not in reasons:
+        reasons.append('MANUAL_REVIEW_REQUIRED')
+    warnings = extraction.warnings + rule_warnings
     if any(warning.startswith('UNPARSED_LINE:') for warning in extraction.warnings):
         if 'UNREAD_EVIDENCE' not in reasons:
             reasons.append('UNREAD_EVIDENCE')
-        decision = 'REVIEW'
-    if unsupported and decision != 'REJECT':
-        decision = 'REVIEW'
-        if 'MANUAL_REVIEW_REQUIRED' not in reasons:
-            reasons.append('MANUAL_REVIEW_REQUIRED')
+        if decision != 'REJECT':
+            decision = 'REVIEW'
     if decision in {'REVIEW', 'REJECT'}:
         reasons = [reason for reason in reasons if reason != 'BASELINE_RULES_PASSED']
     return DocumentResult(
@@ -53,7 +59,7 @@ def verify_document(document_id: str) -> DocumentResult:
         decision=decision,
         reason_codes=reasons,
         parsed_fields=parsed_fields,
-        completeness=completeness(parsed_fields),
+            completeness=completeness(parsed_fields, policy),
         warnings=warnings,
         missing_fields=extraction.missing_fields,
         policy_version=policy.get('policy_version'),
