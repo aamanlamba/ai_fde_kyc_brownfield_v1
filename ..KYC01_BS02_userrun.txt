@@ -1,0 +1,10 @@
+.............................x..........                                 [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.14/site-packages/starlette/testclient.py:45
+  /Users/aamanlamba/Downloads/ai_fde_kyc_brownfield_v1/.venv/lib/python3.14/site-packages/starlette/testclient.py:45: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+XFAIL tests/test_release_integrity.py::test_expected_case_outputs_are_current_regression_snapshots - F-07-018: snapshot asserts exact legacy output; superseded by additive v1 fields (BS-14-02)
+39 passed, 1 xfailed, 1 warning in 0.21s
