@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 
 from src.adapters.sample_repository import load_sidecar
-from src.adapters.file_policy_source import FilePolicySource
 from src.ports import ExtractionProvider, ExtractionResult, FieldValue
 
 
@@ -33,12 +32,8 @@ class SidecarAdapter(ExtractionProvider):
     adapter_name = 'SidecarAdapter'
     adapter_version = '1.0'
 
-    def __init__(self, policy_source: FilePolicySource | None = None):
-        self._policy_source = policy_source or FilePolicySource()
-
-    def _label_aliases(self) -> dict[str, str]:
+    def _label_aliases(self, policy: dict) -> dict[str, str]:
         aliases: dict[str, str] = {}
-        policy = self._policy_source.get_policy()
         for canonical, values in policy.get('label_aliases', {}).items():
             if not isinstance(values, list):
                 continue
@@ -62,8 +57,11 @@ class SidecarAdapter(ExtractionProvider):
         raw_text = load_sidecar(document_id)
         fields: dict[str, FieldValue] = {}
         warnings: list[str] = []
-        alias_map = self._label_aliases()
-        mandatory = self._policy_source.get_policy().get('mandatory_fields', [])
+        from src.orchestrator.wiring import get_policy
+
+        policy = get_policy()
+        alias_map = self._label_aliases(policy)
+        mandatory = policy.get('mandatory_fields', [])
         for line in raw_text.splitlines():
             stripped = line.strip()
             if not stripped or ':' not in stripped:

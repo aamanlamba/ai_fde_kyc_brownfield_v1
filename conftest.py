@@ -2,7 +2,8 @@ import pytest
 from pathlib import Path
 
 LEGACY_KNOWN_DEFECTS = {
-    'tests/test_release_integrity.py::test_expected_case_outputs_are_current_regression_snapshots': 'F-07-018: snapshot asserts exact legacy output; superseded by additive v1 fields (BS-14-02)'
+    'tests/test_release_integrity.py::test_expected_case_outputs_are_current_regression_snapshots': 'F-07-018: snapshot asserts exact legacy output; superseded by additive v1 fields (BS-14-02)',
+    'tests/test_service.py::test_name_variation_exposes_brownfield_gap': 'F-07-004: legacy test asserts CASE-005 APPROVE; reconciliation now refers it (BS-14-04)',
 }
 
 

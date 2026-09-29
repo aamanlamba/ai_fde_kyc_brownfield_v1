@@ -1,5 +1,5 @@
 {
-  "policy_version": "1.1.0",
+  "policy_version": "1.2.0",
   "approved_by": "Compliance KYC policy lead",
   "approved_on": "2026-09-29",
   "completeness_threshold": 0.75,
@@ -41,5 +41,12 @@
     "ISSUE DATE": [
       "DATE OF ISSUE"
     ]
-  }
+  },
+  "name_variation_max": 1,
+  "ocr_confusions": [
+    ["rn", "m"],
+    ["0", "o"],
+    ["1", "l"],
+    ["5", "s"]
+  ]
 }

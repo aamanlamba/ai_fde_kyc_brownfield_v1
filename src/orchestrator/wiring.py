@@ -8,9 +8,10 @@ from src.adapters import sample_repository as _sample_repository
 from src.adapters.sidecar_text import SidecarAdapter
 from src.adapters.tamper_marker import MarkerSignal
 from src.ports import Clock, ExtractionProvider, PolicySource, TamperSignalProvider
+from src.reconciliation.identity import ReconciliationResult, reconcile
 
 _default_policy_source: PolicySource = FilePolicySource()
-_default_provider: ExtractionProvider = SidecarAdapter(_default_policy_source)
+_default_provider: ExtractionProvider = SidecarAdapter()
 _default_clock: Clock = SystemClock()
 _default_tamper_provider: TamperSignalProvider = MarkerSignal()
 
@@ -31,6 +32,10 @@ def get_policy_source() -> PolicySource:
 def set_policy_source(source: PolicySource) -> None:
     global _default_policy_source
     _default_policy_source = source
+
+
+def reconcile_identity(application: dict[str, Any], documents: list[dict[str, Any]], policy: dict[str, Any]) -> list[ReconciliationResult]:
+    return reconcile(application, documents, policy)
 
 
 def get_policy() -> dict[str, Any]:

@@ -8,7 +8,7 @@ One command runs everything:
 
 Pytest summary line:
 
-- `50 passed, 1 xfailed, 1 warning in 0.82s`
+- `56 passed, 2 xfailed, 1 warning in 1.12s`
 
 ## BS-14-02
 
@@ -38,6 +38,21 @@ Pytest summary line: `42 passed, 1 xfailed, 1 warning in 0.21s`.
 SIMULATED: `MarkerSignal` inspects the synthetic `ALTERED_TEXT_REGION_DETECTED` sidecar marker; it does not perform image forensics.
 
 Pytest summary line: `50 passed, 1 xfailed, 1 warning in 0.82s`.
+
+## BS-14-04
+
+| SPEC / carry-over | Files | Tests |
+| --- | --- | --- |
+| SPEC-12-006 deterministic identity reconciliation | `src/reconciliation/identity.py`, `src/service.py`, `src/orchestrator/wiring.py`, `src/models.py` | `test_TST_13_019_case005_name_variation_reviews`, `test_TST_13_020_ocr_confusion_tolerated`, `test_TST_13_021_clean_cases_no_identity_reason`, `test_TST_13_022_harmless_variations_tolerated`, `test_TST_13_023_dob_mismatch_reviews`, `test_TST_13_024_unrelated_name_mismatch` |
+| Policy-configured name tolerances | `config/policy_v1.json`, `src/adapters/file_policy_source.py` | `test_TST_13_033_invalid_policy_rejected`, `test_TST_13_022_harmless_variations_tolerated` |
+| D-73 intended-change registry and projection | `config/intended_changes.json`, root `conftest.py`, `scripts/sanity_check.py`, `tests/intended/test_bs02_legacy_projection_unchanged.py` | `test_expected_case_outputs_are_current_regression_snapshots`, `test_name_variation_exposes_brownfield_gap`, `test_TST_13_021_clean_cases_no_identity_reason` |
+| CF-10 aliases follow runtime policy source | `src/adapters/sidecar_text.py`, `src/orchestrator/wiring.py` | `test_bs04_aliases_follow_policy_source` |
+
+D-73: `config/intended_changes.json` records only CASE-005 `decision` and `reason_codes` as intended case-level changes. The root xfail registry tracks the protected CASE-005 legacy assertion; the scoped `scripts/sanity_check.py` projection excludes only the registered keys for that case. Document-level projections remain compared.
+
+SIMULATED: `MarkerSignal` (unchanged); it recognizes only the synthetic sidecar marker and is not image forensics.
+
+Pytest summary line: `56 passed, 2 xfailed, 1 warning in 1.12s`.
 
 ## SPEC coverage
 

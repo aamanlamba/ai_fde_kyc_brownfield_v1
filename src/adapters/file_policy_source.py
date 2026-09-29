@@ -61,6 +61,8 @@ class FilePolicySource(PolicySource):
             'number_patterns',
             'mandatory_fields',
             'label_aliases',
+            'name_variation_max',
+            'ocr_confusions',
         )
         missing = [key for key in required_keys if key not in raw]
         if missing:
@@ -88,6 +90,15 @@ class FilePolicySource(PolicySource):
             raise PolicyLoadError('mandatory_fields must be a non-empty list')
         if not isinstance(raw['label_aliases'], dict) or not raw['label_aliases']:
             raise PolicyLoadError('label_aliases must be a non-empty object')
+        if isinstance(raw['name_variation_max'], bool) or not isinstance(raw['name_variation_max'], int) or raw['name_variation_max'] < 0:
+            raise PolicyLoadError('name_variation_max must be a non-negative integer')
+        if not isinstance(raw['ocr_confusions'], list) or any(
+            not isinstance(pair, list)
+            or len(pair) != 2
+            or any(not isinstance(value, str) or not value for value in pair)
+            for pair in raw['ocr_confusions']
+        ):
+            raise PolicyLoadError('ocr_confusions must be a list of non-empty string pairs')
 
         return raw
 

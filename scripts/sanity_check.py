@@ -138,6 +138,12 @@ for case in cases:
         err(f"missing expected baseline output for {case_id}")
     else:
         expected = read_json(expected_path)
+        intended_changes = read_json(ROOT / "config" / "intended_changes.json")
+        case_changes = intended_changes.get(case_id, {})
+        ignored_case_keys = set(case_changes.get("keys", [])) if isinstance(case_changes, dict) else set()
+        expected_projection = {
+            key: value for key, value in expected.items() if key not in ignored_case_keys
+        }
         def matches_projection(expected_value, actual_value):
             if isinstance(expected_value, dict):
                 return isinstance(actual_value, dict) and all(
@@ -151,7 +157,7 @@ for case in cases:
                 )
             return expected_value == actual_value
 
-        if not matches_projection(expected, actual):
+        if not matches_projection(expected_projection, actual):
             err(f"expected baseline output drift for {case_id}")
 
 if len(set(case_ids)) != len(case_ids):

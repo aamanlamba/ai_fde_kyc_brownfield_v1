@@ -1,0 +1,9 @@
+{
+  "CASE-005": {
+    "keys": [
+      "decision",
+      "reason_codes"
+    ],
+    "reason": "F-07-004: identity reconciliation (BS-14-04)"
+  }
+}

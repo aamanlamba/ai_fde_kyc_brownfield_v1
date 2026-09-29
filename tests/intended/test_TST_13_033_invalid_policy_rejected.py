@@ -32,3 +32,17 @@ def test_TST_13_033_invalid_policy_rejected(tmp_path):
     missing_patterns_path.write_text(json.dumps(missing_patterns), encoding='utf-8')
     with pytest.raises(PolicyLoadError):
         FilePolicySource(missing_patterns_path)
+
+    invalid_variation = valid.copy()
+    invalid_variation['name_variation_max'] = True
+    invalid_variation_path = tmp_path / 'invalid_variation.json'
+    invalid_variation_path.write_text(json.dumps(invalid_variation), encoding='utf-8')
+    with pytest.raises(PolicyLoadError):
+        FilePolicySource(invalid_variation_path)
+
+    invalid_confusions = valid.copy()
+    invalid_confusions['ocr_confusions'] = [['rn']]
+    invalid_confusions_path = tmp_path / 'invalid_confusions.json'
+    invalid_confusions_path.write_text(json.dumps(invalid_confusions), encoding='utf-8')
+    with pytest.raises(PolicyLoadError):
+        FilePolicySource(invalid_confusions_path)

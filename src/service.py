@@ -1,5 +1,5 @@
 from src.models import DocumentResult, CaseResult
-from src.orchestrator.wiring import get_clock, get_extraction_provider, get_policy, get_tamper_provider
+from src.orchestrator.wiring import get_clock, get_extraction_provider, get_policy, get_tamper_provider, reconcile_identity
 from src.repository import load_application
 from src.validation.rules import completeness, validate
 from src.validation.doctype import normalise
@@ -70,12 +70,31 @@ def verify_case(case_id: str) -> CaseResult:
     app = load_application(case_id)
     docs = [verify_document(x) for x in app['document_ids']]
     worst = max(docs, key=lambda x: RANK[x.decision]).decision
-    reason_codes = sorted({r for d in docs for r in d.reason_codes})
+    policy = get_policy()
+    reconciliation = reconcile_identity(
+        app,
+        [{'document_id': document.document_id, 'fields': document.parsed_fields} for document in docs],
+        policy,
+    )
+    case_reasons = {
+        result['reason']
+        for result in reconciliation
+        if result['reason'] is not None and result['reason'].startswith('IDENTITY_')
+    }
+    if case_reasons:
+        reason_codes = sorted(
+            ({reason for document in docs for reason in document.reason_codes} | case_reasons | {'MANUAL_REVIEW_REQUIRED'})
+            - {'BASELINE_RULES_PASSED'}
+        )
+        worst = max((worst, 'REVIEW'), key=lambda decision: RANK[decision])
+    else:
+        reason_codes = sorted({r for d in docs for r in d.reason_codes})
     return CaseResult(
         case_id=case_id,
         decision=worst,
         reason_codes=reason_codes,
         documents=docs,
         limitation_notice='Repo 1.0 aggregates document decisions only; it does not perform robust cross-document identity resolution.',
-        policy_version=get_policy().get('policy_version'),
+        policy_version=policy.get('policy_version'),
+        reconciliation=reconciliation,
     )

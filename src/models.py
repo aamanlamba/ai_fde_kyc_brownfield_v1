@@ -25,3 +25,4 @@ class CaseResult(BaseModel):
     documents: list[DocumentResult]
     limitation_notice: str
     policy_version: str | None = None
+    reconciliation: list[dict[str, Any]] = []
