@@ -4,39 +4,16 @@ from datetime import date
 import re
 from typing import Any
 
-from src.adapters.clocks import SystemClock
-from src.adapters.file_policy_source import DEFAULT_POLICY_PATH, FilePolicySource
 from src.ports import Clock
+from src.orchestrator.wiring import get_clock, get_policy, get_policy_source as _get_policy_source, set_policy_source as _set_policy_source
 
-_policy_source = FilePolicySource(DEFAULT_POLICY_PATH)
-REFERENCE_DATE = SystemClock().today()
 MANDATORY: tuple[str, ...] = tuple()
 PATTERNS: dict[str, re.Pattern[str] | str] = {}
 COMPLETENESS_THRESHOLD = 0.75
-_VALID_EVIDENCE_PREFIXES = (
-    'document type:',
-    'name:',
-    'dob:',
-    'document no:',
-    'issue date:',
-    'expiry date:',
-    'address:',
-    'nationality:',
-    'ocr_quality:',
-    'unreadable_glyphs:',
-    'capture_orientation:',
-    'security note:',
-)
 
 
 def _current_policy() -> dict[str, Any]:
-    if hasattr(_policy_source, 'get_policy'):
-        return _policy_source.get_policy()
-    if hasattr(_policy_source, 'load_policy'):
-        return _policy_source.load_policy()
-    if callable(_policy_source):
-        return _policy_source()
-    return dict(_policy_source)
+    return get_policy()
 
 
 def _sync_runtime_policy() -> None:
@@ -54,12 +31,11 @@ _sync_runtime_policy()
 
 
 def get_policy_source():
-    return _policy_source
+    return _get_policy_source()
 
 
 def set_policy_source(source):
-    global _policy_source
-    _policy_source = source
+    _set_policy_source(source)
     _sync_runtime_policy()
 
 
@@ -89,7 +65,7 @@ def evaluate(fields: dict, raw_text: str, clock: Clock | None = None) -> tuple[s
     expiry = fields.get('expiry_date')
     if expiry:
         try:
-            decision_date = (clock or SystemClock()).today()
+            decision_date = (clock or get_clock()).today()
             if date.fromisoformat(expiry) < decision_date:
                 reasons.append('DOCUMENT_EXPIRED')
         except ValueError:
@@ -100,15 +76,6 @@ def evaluate(fields: dict, raw_text: str, clock: Clock | None = None) -> tuple[s
         warnings.append('OCR_QUALITY_DEGRADED')
     if '90_DEGREES' in raw_text:
         warnings.append('ROTATED_DOCUMENT')
-    if 'UNPARSED_LINE:' in raw_text:
-        reasons.append('UNREAD_EVIDENCE')
-    else:
-        lines = [line.strip() for line in raw_text.splitlines() if ':' in line]
-        for line in lines:
-            label = line.split(':', 1)[0].strip().lower()
-            if label and not any(line.lower().startswith(prefix) for prefix in _VALID_EVIDENCE_PREFIXES):
-                reasons.append('UNREAD_EVIDENCE')
-                break
     if any(r in reasons for r in ('SUSPECTED_TAMPERING', 'DOCUMENT_EXPIRED')):
         return 'REJECT', reasons, warnings
     if reasons or warnings:

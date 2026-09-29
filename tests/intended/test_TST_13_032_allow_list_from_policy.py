@@ -1,8 +1,9 @@
-from src import service
+from src import rules
+from src.service import verify_document
 
 
 def test_TST_13_032_allow_list_from_policy():
-    original = service._POLICY
+    original = rules.get_policy_source()
 
     class Policy:
         def get_policy(self):
@@ -17,10 +18,10 @@ def test_TST_13_032_allow_list_from_policy():
                 'label_aliases': {'NAME': ['FULL NAME'], 'DOCUMENT TYPE': ['DOC TYPE']},
             }
 
-    service._POLICY = Policy()
+    rules.set_policy_source(Policy())
     try:
-        result = service.verify_document('CASE-001-DL')
+        result = verify_document('CASE-001-DL')
         assert result.decision == 'REVIEW'
         assert 'UNSUPPORTED_DOCUMENT_TYPE' in result.reason_codes
     finally:
-        service._POLICY = original
+        rules.set_policy_source(original)

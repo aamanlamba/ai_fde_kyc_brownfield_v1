@@ -11,6 +11,24 @@ def _normalise_label(value: str) -> str:
     return re.sub(r'\s+', ' ', value.strip()).lower()
 
 
+_CANONICAL_FIELDS = {
+    'document type': 'document_type',
+    'document_type': 'document_type',
+    'name': 'full_name',
+    'full_name': 'full_name',
+    'dob': 'date_of_birth',
+    'date_of_birth': 'date_of_birth',
+    'document no': 'document_number',
+    'document_number': 'document_number',
+    'issue date': 'issue_date',
+    'issue_date': 'issue_date',
+    'expiry date': 'expiry_date',
+    'expiry_date': 'expiry_date',
+    'address': 'address',
+    'nationality': 'nationality',
+}
+
+
 class SidecarAdapter(ExtractionProvider):
     adapter_name = 'SidecarAdapter'
     adapter_version = '1.0'
@@ -24,8 +42,9 @@ class SidecarAdapter(ExtractionProvider):
         for canonical, values in policy.get('label_aliases', {}).items():
             if not isinstance(values, list):
                 continue
+            field_name = _CANONICAL_FIELDS.get(_normalise_label(str(canonical)), canonical)
             for alias in [canonical, *values]:
-                aliases[_normalise_label(str(alias))] = canonical
+                aliases[_normalise_label(str(alias))] = field_name
         for canonical, alias in {
             'document_type': 'document type',
             'full_name': 'name',

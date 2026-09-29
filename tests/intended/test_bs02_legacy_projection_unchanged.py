@@ -1,19 +1,30 @@
-from src.models import DocumentResult
+import json
+from pathlib import Path
+
+from src.repository import list_cases
+from src.service import verify_case
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _matches_legacy_projection(expected, actual):
+    if isinstance(expected, dict):
+        return isinstance(actual, dict) and all(
+            key in actual and _matches_legacy_projection(value, actual[key])
+            for key, value in expected.items()
+        )
+    if isinstance(expected, list):
+        return isinstance(actual, list) and len(expected) == len(actual) and all(
+            _matches_legacy_projection(expected_item, actual_item)
+            for expected_item, actual_item in zip(expected, actual)
+        )
+    return expected == actual
 
 
 def test_bs02_legacy_projection_unchanged():
-    result = DocumentResult(
-        document_id='CASE-001',
-        document_type='passport',
-        decision='APPROVE',
-        reason_codes=['BASELINE_RULES_PASSED'],
-        parsed_fields={'full_name': 'Aarav Mehta'},
-        completeness=1.0,
-        warnings=[],
-        missing_fields=[],
-        policy_version='1.1.0',
-    )
-    assert result.document_id == 'CASE-001'
-    assert result.document_type == 'passport'
-    assert result.decision == 'APPROVE'
-    assert result.parsed_fields['full_name'] == 'Aarav Mehta'
+    for case in list_cases():
+        case_id = case['case_id']
+        expected_path = ROOT / 'data' / 'expected_baseline_outputs' / f'{case_id}.json'
+        expected = json.loads(expected_path.read_text(encoding='utf-8'))
+        actual = verify_case(case_id).model_dump(mode='json')
+        assert _matches_legacy_projection(expected, actual)

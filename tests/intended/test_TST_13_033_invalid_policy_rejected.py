@@ -25,3 +25,10 @@ def test_TST_13_033_invalid_policy_rejected(tmp_path):
     missing_approved_path.write_text(json.dumps(missing_approved), encoding='utf-8')
     with pytest.raises(PolicyLoadError):
         FilePolicySource(missing_approved_path)
+
+    missing_patterns = valid.copy()
+    missing_patterns.pop('number_patterns')
+    missing_patterns_path = tmp_path / 'missing_patterns.json'
+    missing_patterns_path.write_text(json.dumps(missing_patterns), encoding='utf-8')
+    with pytest.raises(PolicyLoadError):
+        FilePolicySource(missing_patterns_path)

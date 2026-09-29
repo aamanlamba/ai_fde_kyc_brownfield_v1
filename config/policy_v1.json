@@ -20,31 +20,25 @@
     "expiry_date"
   ],
   "label_aliases": {
-    "full_name": [
-      "NAME",
+    "NAME": [
       "FULL NAME",
       "SURNAME AND GIVEN NAMES"
     ],
-    "date_of_birth": [
-      "DOB",
+    "DOB": [
       "DATE OF BIRTH"
     ],
-    "document_number": [
-      "DOCUMENT NO",
+    "DOCUMENT NO": [
       "DOCUMENT NUMBER",
       "DOC NO"
     ],
-    "expiry_date": [
-      "EXPIRY DATE",
+    "EXPIRY DATE": [
       "DATE OF EXPIRY",
       "EXPIRES"
     ],
-    "document_type": [
-      "DOCUMENT TYPE",
+    "DOCUMENT TYPE": [
       "DOC TYPE"
     ],
-    "issue_date": [
-      "ISSUE DATE",
+    "ISSUE DATE": [
       "DATE OF ISSUE"
     ]
   }

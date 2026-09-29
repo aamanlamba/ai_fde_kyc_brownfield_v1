@@ -1,14 +1,11 @@
-from src.adapters.file_policy_source import FilePolicySource
 from src.models import DocumentResult, CaseResult
-from src.orchestrator.wiring import get_extraction_provider
-from src.parser import parse_legacy_ocr
+from src.orchestrator.wiring import get_extraction_provider, get_policy
 from src.repository import load_application
 from src.rules import evaluate, completeness
 from src.validation.doctype import normalise
 from src.ports import ExtractionUnavailable
 
 RANK={'APPROVE':0,'REVIEW':1,'REJECT':2}
-_POLICY = FilePolicySource()
 
 
 def verify_document(document_id: str) -> DocumentResult:
@@ -25,34 +22,31 @@ def verify_document(document_id: str) -> DocumentResult:
             completeness=0.0,
             warnings=[],
             missing_fields=[],
-            policy_version=_POLICY.get_policy().get('policy_version'),
+            policy_version=get_policy().get('policy_version'),
         )
 
     text = extraction.raw_text
-    legacy_fields, parse_warnings = parse_legacy_ocr(text)
     parsed_fields = {k: v.value for k, v in extraction.fields.items() if v.value is not None}
-    document_type = legacy_fields.get('document_type')
-    policy = _POLICY.get_policy()
+    document_type_field = extraction.fields.get('document_type')
+    document_type = document_type_field.raw if document_type_field is not None else None
+    policy = get_policy()
     supported = set(policy.get('supported_types', []))
     normalised = normalise(document_type)
-    if (document_type is None) or (normalised is None) or (normalised not in supported):
-        return DocumentResult(
-            document_id=document_id,
-            document_type=document_type,
-            decision='REVIEW',
-            reason_codes=['UNSUPPORTED_DOCUMENT_TYPE', 'MANUAL_REVIEW_REQUIRED'],
-            parsed_fields=parsed_fields,
-            completeness=completeness(parsed_fields),
-            warnings=parse_warnings,
-            missing_fields=extraction.missing_fields,
-            policy_version=policy.get('policy_version'),
-        )
-
     decision, reasons, rule_warnings = evaluate(parsed_fields, text)
-    warnings = list(dict.fromkeys(parse_warnings + rule_warnings + extraction.warnings))
-    if any('UNPARSED_LINE:' in warning for warning in warnings):
-        reasons = ['UNREAD_EVIDENCE'] + [r for r in reasons if r != 'UNREAD_EVIDENCE']
+    warnings = extraction.warnings + rule_warnings
+    unsupported = normalised is None or normalised not in supported
+    if unsupported and 'UNSUPPORTED_DOCUMENT_TYPE' not in reasons:
+        reasons.append('UNSUPPORTED_DOCUMENT_TYPE')
+    if any(warning.startswith('UNPARSED_LINE:') for warning in extraction.warnings):
+        if 'UNREAD_EVIDENCE' not in reasons:
+            reasons.append('UNREAD_EVIDENCE')
         decision = 'REVIEW'
+    if unsupported and decision != 'REJECT':
+        decision = 'REVIEW'
+        if 'MANUAL_REVIEW_REQUIRED' not in reasons:
+            reasons.append('MANUAL_REVIEW_REQUIRED')
+    if decision in {'REVIEW', 'REJECT'}:
+        reasons = [reason for reason in reasons if reason != 'BASELINE_RULES_PASSED']
     return DocumentResult(
         document_id=document_id,
         document_type=document_type,
@@ -77,5 +71,5 @@ def verify_case(case_id: str) -> CaseResult:
         reason_codes=reason_codes,
         documents=docs,
         limitation_notice='Repo 1.0 aggregates document decisions only; it does not perform robust cross-document identity resolution.',
-        policy_version=_POLICY.get_policy().get('policy_version'),
+        policy_version=get_policy().get('policy_version'),
     )

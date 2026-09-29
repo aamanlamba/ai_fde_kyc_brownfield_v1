@@ -3,7 +3,10 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+# The checker necessarily reads and parses source files.
 TOOLING_EXEMPT = {'src/obs/import_graph.py', 'obs/import_graph.py'}
+COMPOSITION_ROOT = 'orchestrator/wiring.py'
+RESTRICTED_LAYER_IMPORTS = ('src.adapters', 'src.api', 'src.orchestrator')
 
 _PROVIDER_PREFIXES = (
     'google',
@@ -14,10 +17,6 @@ _PROVIDER_PREFIXES = (
     'llama_index',
     'vertexai',
 )
-
-
-def _normalise_import(module: str | None) -> str:
-    return (module or '').split('.')[0]
 
 
 def _is_provider_import(node: ast.Import | ast.ImportFrom) -> bool:
@@ -61,25 +60,20 @@ def check_import_boundaries(src_root: str | Path) -> list[str]:
         except SyntaxError:
             continue
 
-        if relative.parts and relative.parts[0] in {'decision', 'validation', 'reconciliation'}:
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Import):
-                    for alias in node.names:
-                        if alias.name.startswith('src.adapters'):
-                            violations.append(f'{rel_string}: imports {alias.name} from forbidden layer')
-                        if alias.name.startswith('src.') and not alias.name.startswith('src.adapters'):
-                            violations.append(f'{rel_string}: imports {alias.name} from forbidden layer')
-                elif isinstance(node, ast.ImportFrom):
-                    mod = node.module or ''
-                    if mod.startswith('src.adapters'):
-                        violations.append(f'{rel_string}: imports {mod} from forbidden layer')
-                    if mod.startswith('src.') and not mod.startswith('src.adapters'):
-                        violations.append(f'{rel_string}: imports {mod} from forbidden layer')
-
         for node in ast.walk(tree):
             if isinstance(node, ast.Import) or isinstance(node, ast.ImportFrom):
                 if _is_provider_import(node):
                     violations.append(f'{rel_string}: provider SDK import {node}')
+                if isinstance(node, ast.Import):
+                    imported_modules = [alias.name for alias in node.names]
+                else:
+                    imported_modules = [node.module or '']
+                for module in imported_modules:
+                    if relative.parts and relative.parts[0] in {'decision', 'validation', 'reconciliation'}:
+                        if any(module == prefix or module.startswith(prefix + '.') for prefix in RESTRICTED_LAYER_IMPORTS):
+                            violations.append(f'{rel_string}: imports {module} from forbidden layer')
+                    if (module == 'src.adapters' or module.startswith('src.adapters.')) and rel_string != COMPOSITION_ROOT:
+                        violations.append(f'{rel_string}: concrete adapter import {module} outside composition root')
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'open':
                 if not (relative.parts and relative.parts[0] == 'adapters'):
                     violations.append(f'{rel_string}: bare open() call outside adapters')

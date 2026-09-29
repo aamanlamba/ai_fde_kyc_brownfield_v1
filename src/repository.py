@@ -1,4 +1,4 @@
-from src.adapters.sample_repository import (
+from src.orchestrator.wiring import (
     list_cases,
     load_application,
     load_ground_truth,

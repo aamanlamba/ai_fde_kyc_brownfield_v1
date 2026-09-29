@@ -8,7 +8,23 @@ One command runs everything:
 
 Pytest summary line:
 
-- `29 passed, 1 warning in 0.14s`
+- `42 passed, 1 xfailed, 1 warning in 0.21s`
+
+## BS-14-02
+
+| SPEC / carry-over | Files | Tests |
+| --- | --- | --- |
+| SPEC-12-003 extraction port and tolerant sidecar adapter | `src/ports.py`, `src/adapters/sidecar_text.py`, `src/adapters/mock_extraction.py`, `src/orchestrator/wiring.py`, `src/service.py` | `test_TST_13_006_sidecar_extraction_matches_baseline`, `test_TST_13_007_label_variation_tolerated`, `test_TST_13_008_missing_field_listed_not_inferred`, `test_TST_13_009_unparsed_line_reaches_rules`, `test_TST_13_010_extraction_unavailable_reviews_offline` |
+| SPEC-12-004 document type normalization and allow-list | `src/validation/doctype.py`, `src/service.py`, `src/rules.py`, `config/policy_v1.json` | `test_TST_13_011_doctype_normalisation_matches_ground_truth`, `test_TST_13_012_unsupported_type_reviews`, `test_TST_13_032_allow_list_from_policy`, `test_bs02_unsupported_type_keeps_tamper` |
+| SPEC-12-008 policy version, aliases, and cached policy | `src/models.py`, `src/adapters/file_policy_source.py`, `src/orchestrator/wiring.py`, `config/policy_v1.json` | `test_TST_13_031_policy_version_on_every_result`, `test_bs02_policy_loaded_once`, `test_bs02_alias_labels_end_to_end` |
+| CF-1/CF-2/CF-3/CF-4 and response consistency | `src/obs/import_graph.py`, `src/orchestrator/wiring.py`, `src/rules.py`, `src/service.py`, `tests/intended/` | `test_TST_13_001_import_graph_boundaries`, `test_TST_13_002_import_graph_detects_violation`, `test_TST_13_033_invalid_policy_rejected`, `test_TST_13_062_test_tree_hygiene`, `test_bs02_no_passed_code_on_review` |
+| D-66 legacy snapshot projection | Root `conftest.py`; `scripts/sanity_check.py` legacy projection comparison | `test_expected_case_outputs_are_current_regression_snapshots` remains the registered strict xfail; `test_bs02_legacy_projection_unchanged` verifies all six cases |
+
+D-66 changes: root `conftest.py` registers the exact-output legacy snapshot defect with `strict=True`; `scripts/sanity_check.py` recursively compares the keys present in each expected baseline output, including nested document entries.
+
+SIMULATED items: none.
+
+Pytest summary line: `42 passed, 1 xfailed, 1 warning in 0.21s`.
 
 ## SPEC coverage
 
