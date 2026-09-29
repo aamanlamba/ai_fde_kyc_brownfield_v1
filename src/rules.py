@@ -13,9 +13,25 @@ REFERENCE_DATE = SystemClock().today()
 MANDATORY: tuple[str, ...] = tuple()
 PATTERNS: dict[str, re.Pattern[str] | str] = {}
 COMPLETENESS_THRESHOLD = 0.75
+_VALID_EVIDENCE_PREFIXES = (
+    'document type:',
+    'name:',
+    'dob:',
+    'document no:',
+    'issue date:',
+    'expiry date:',
+    'address:',
+    'nationality:',
+    'ocr_quality:',
+    'unreadable_glyphs:',
+    'capture_orientation:',
+    'security note:',
+)
 
 
 def _current_policy() -> dict[str, Any]:
+    if hasattr(_policy_source, 'get_policy'):
+        return _policy_source.get_policy()
     if hasattr(_policy_source, 'load_policy'):
         return _policy_source.load_policy()
     if callable(_policy_source):
@@ -58,9 +74,12 @@ def evaluate(fields: dict, raw_text: str, clock: Clock | None = None) -> tuple[s
     reasons: list[str] = []
     warnings: list[str] = []
     policy = _current_policy()
-    dtype = fields.get('document_type', '').lower()
+    dtype = (fields.get('document_type') or '').lower()
     c = completeness(fields)
     threshold = float(policy.get('completeness_threshold', COMPLETENESS_THRESHOLD))
+    supported = {str(item).lower() for item in policy.get('supported_types', [])}
+    if dtype and dtype not in supported:
+        reasons.append('UNSUPPORTED_DOCUMENT_TYPE')
     if c < threshold:
         reasons.append('INSUFFICIENT_MANDATORY_FIELDS')
     num = fields.get('document_number', '')
@@ -81,6 +100,15 @@ def evaluate(fields: dict, raw_text: str, clock: Clock | None = None) -> tuple[s
         warnings.append('OCR_QUALITY_DEGRADED')
     if '90_DEGREES' in raw_text:
         warnings.append('ROTATED_DOCUMENT')
+    if 'UNPARSED_LINE:' in raw_text:
+        reasons.append('UNREAD_EVIDENCE')
+    else:
+        lines = [line.strip() for line in raw_text.splitlines() if ':' in line]
+        for line in lines:
+            label = line.split(':', 1)[0].strip().lower()
+            if label and not any(line.lower().startswith(prefix) for prefix in _VALID_EVIDENCE_PREFIXES):
+                reasons.append('UNREAD_EVIDENCE')
+                break
     if any(r in reasons for r in ('SUSPECTED_TAMPERING', 'DOCUMENT_EXPIRED')):
         return 'REJECT', reasons, warnings
     if reasons or warnings:

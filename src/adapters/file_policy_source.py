@@ -60,6 +60,7 @@ class FilePolicySource(PolicySource):
             'supported_types',
             'number_patterns',
             'mandatory_fields',
+            'label_aliases',
         )
         missing = [key for key in required_keys if key not in raw]
         if missing:
@@ -85,6 +86,8 @@ class FilePolicySource(PolicySource):
             raise PolicyLoadError('number_patterns must be a non-empty object')
         if not isinstance(raw['mandatory_fields'], list) or not raw['mandatory_fields']:
             raise PolicyLoadError('mandatory_fields must be a non-empty list')
+        if not isinstance(raw['label_aliases'], dict) or not raw['label_aliases']:
+            raise PolicyLoadError('label_aliases must be a non-empty object')
 
         return raw
 

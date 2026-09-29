@@ -1,12 +1,35 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Protocol, runtime_checkable
 
 
+@dataclass
+class FieldValue:
+    raw: str | None = None
+    value: str | None = None
+    confidence: float = 1.0
+
+
+@dataclass
+class ExtractionResult:
+    document_id: str
+    fields: dict[str, FieldValue] = field(default_factory=dict)
+    missing_fields: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    raw_text: str = ""
+    adapter_name: str = ""
+    adapter_version: str = ""
+
+
+class ExtractionUnavailable(RuntimeError):
+    pass
+
+
 @runtime_checkable
 class ExtractionProvider(Protocol):
-    def extract(self, document_id: str) -> str:
+    def extract(self, document_id: str) -> ExtractionResult:
         ...
 
 

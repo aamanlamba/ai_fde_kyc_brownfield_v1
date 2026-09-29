@@ -15,6 +15,8 @@ class DocumentResult(BaseModel):
     completeness: float
     warnings: list[str]
     source: str = "deterministic_sidecar_ocr"
+    missing_fields: list[str] = []
+    policy_version: str | None = None
 
 class CaseResult(BaseModel):
     case_id: str
@@ -22,3 +24,4 @@ class CaseResult(BaseModel):
     reason_codes: list[str]
     documents: list[DocumentResult]
     limitation_notice: str
+    policy_version: str | None = None

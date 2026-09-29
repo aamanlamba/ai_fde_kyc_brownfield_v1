@@ -138,7 +138,17 @@ for case in cases:
         err(f"missing expected baseline output for {case_id}")
     else:
         expected = read_json(expected_path)
-        if expected != actual:
+        baseline_projection = dict(actual)
+        baseline_projection.pop("policy_version", None)
+        baseline_projection["documents"] = [
+            {
+                key: value
+                for key, value in document.items()
+                if key not in {"missing_fields", "policy_version"}
+            }
+            for document in actual.get("documents", [])
+        ]
+        if expected != baseline_projection:
             err(f"expected baseline output drift for {case_id}")
 
 if len(set(case_ids)) != len(case_ids):
